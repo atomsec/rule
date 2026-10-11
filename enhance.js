@@ -1,179 +1,294 @@
 async function operator(proxies, targetPlatform, context) {
 
 
-const counter = {};
+/*
+ *
+ * Proxy Normalizer
+ *
+ * 多机场节点标准化
+ *
+ * 输出:
+ *
+ * [机场] 🇯🇵 JP [OPT-GPT] [vmess] 01
+ *
+ */
 
 
 
-return proxies.map(proxy=>{
+// ==========================
+// 排除无效节点
+// ==========================
 
 
-let name = proxy.name;
+const ignoreRules = [
 
+    /剩余流量/,
+    /套餐到期/,
+    /距离下次/,
+    /重置/,
+    /官网/,
+    /https?:\/\//,
+    /建议/,
+    /公告/,
+    /群/,
+    /频道/
 
+];
 
-// =======================
-// 修复台湾旗帜
-// =======================
 
-name =
-name.replace(
-/🇨🇳 台湾/g,
-"🇹🇼 台湾"
-);
 
 
+// ==========================
+// 标签规则
+// ==========================
 
 
-// =======================
-// 删除重复标签
-// =======================
+function getTags(name){
 
 
-name =
-name.replace(
-/GPT GPT/g,
-"GPT"
-);
+    let tags=[];
 
 
-name =
-name.replace(
-/WAP WAP/g,
-"WAP"
-);
 
+    // GPT
 
+    if(
+        /GPT|AI|OpenAI|ChatGPT/i.test(name)
+    )
+        tags.push("GPT");
 
-name =
-name.replace(
-/移动 联通/g,
-""
-);
 
 
-name =
-name.replace(
-/联通 电信/g,
-""
-);
+    // 优化
 
+    if(
+        /优化|OPT/i.test(name)
+    )
+        tags.push("OPT");
 
 
 
-// =======================
-// 国家ISO
-// =======================
+    // WAP
 
+    if(
+        /WAP/i.test(name)
+    )
+        tags.push("WAP");
 
-const geo =
-ProxyUtils.getISO(name);
 
 
+    // 专线
 
-const flag =
-ProxyUtils.getFlag(name);
+    if(
+        /高速专线|专线|IEPL|IPLC/i.test(name)
+    )
+        tags.push("PREMIUM");
 
 
 
+    // 直连
 
-// =======================
-// 标签提取
-// =======================
+    if(
+        /直连|DIRECT/i.test(name)
+    )
+        tags.push("DIRECT");
 
 
-let tags=[];
 
+    // 原生
 
+    if(
+        /原生|Native|ISP/i.test(name)
+    )
+        tags.push("ISP");
 
-if(/GPT|AI/i.test(name))
- tags.push("GPT");
 
 
+    // IPv6
 
-if(/WAP/i.test(name))
- tags.push("WAP");
+    if(
+        /V6|IPv6|IPV6/i.test(name)
+    )
+        tags.push("V6");
 
 
 
-if(/直连|DIRECT/i.test(name))
- tags.push("DIRECT");
+    // 倍率
 
+    let rate =
+        name.match(
+        /(0\.\d+|[1-9]\d*)[倍×x]/i
+        );
 
 
-if(/原生|ISP/i.test(name))
- tags.push("ISP");
+    if(rate)
+        tags.push(rate[1]+"x");
 
 
 
-if(/移动|CM/i.test(name))
- tags.push("CM");
+    // 国内线路
 
+    if(/移动|CM/i.test(name))
+        tags.push("CM");
 
-if(/联通|CU/i.test(name))
- tags.push("CU");
 
+    if(/联通|CU/i.test(name))
+        tags.push("CU");
 
-if(/电信|CT/i.test(name))
- tags.push("CT");
 
+    if(/电信|CT/i.test(name))
+        tags.push("CT");
 
 
-if(/0\.1|0\.1×/i.test(name))
- tags.push("0.1x");
 
+    return [
+        ...new Set(tags)
+    ];
 
-if(/2×|2x/i.test(name))
- tags.push("2x");
+}
 
 
 
+// ==========================
+// 国家识别
+// ==========================
 
 
-// =======================
-// 去重
-// =======================
+function getCountry(name){
 
 
-tags =
-[...new Set(tags)];
+    let flag;
+    let iso;
 
 
+    try{
 
 
-// =======================
+        flag =
+        ProxyUtils.getFlag(name);
+
+
+        iso =
+        ProxyUtils.getISO(name);
+
+
+
+        if(iso)
+            return {
+                flag,
+                iso
+            };
+
+
+    }catch(e){}
+
+
+
+    return {
+
+        flag:"🌐",
+        iso:"UN"
+
+    };
+
+
+}
+
+
+
+
+// ==========================
 // 编号
-// =======================
+// ==========================
 
 
-let key =
-`${geo}-${tags.join("-")}-${proxy.type}`;
-
-
-
-counter[key] =
-(counter[key]||0)+1;
-
-
-
-let num =
-String(counter[key])
-.padStart(2,"0");
+const counter={};
 
 
 
 
-// =======================
-// 输出
-// =======================
+// ==========================
+// 主处理
+// ==========================
 
 
-proxy.name =
-`${flag} ${geo} ${tags.length?"["+tags.join("-")+"]":""} ${num}`;
+return proxies
+
+
+.filter(proxy=>{
+
+
+    return !ignoreRules.some(
+        r=>r.test(proxy.name)
+    );
+
+
+})
+
+
+.map(proxy=>{
+
+
+    const oldName =
+        proxy.name || "";
 
 
 
-return proxy;
+    const subName =
+        proxy._subDisplayName ||
+        proxy._subName ||
+        "SUB";
+
+
+
+    const country =
+        getCountry(oldName);
+
+
+
+    const tags =
+        getTags(oldName);
+
+
+
+    const type =
+        proxy.type ||
+        "unknown";
+
+
+
+    const tagText =
+        tags.length
+        ?
+        `[${tags.join("-")}]`
+        :
+        "";
+
+
+
+    const key =
+        `${subName}-${country.iso}-${tagText}-${type}`;
+
+
+
+    counter[key] =
+        (counter[key]||0)+1;
+
+
+
+    const num =
+        String(counter[key])
+        .padStart(2,"0");
+
+
+
+
+    proxy.name =
+    `[${subName}] ${country.flag} ${country.iso} ${tagText} [${type}] ${num}`;
+
+
+
+    return proxy;
 
 
 });
