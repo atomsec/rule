@@ -1,145 +1,182 @@
 async function operator(proxies, targetPlatform, context) {
 
 
-  const counter = {};
+const counter = {};
 
 
-  return proxies.map(proxy => {
 
+return proxies.map(proxy=>{
 
-    let name = proxy.name;
 
+let name = proxy.name;
 
 
-    // ====================
-    // 标签识别
-    // ====================
 
+// =======================
+// 修复台湾旗帜
+// =======================
 
-    let tags = [];
+name =
+name.replace(
+/🇨🇳 台湾/g,
+"🇹🇼 台湾"
+);
 
 
 
-    if (/GPT|AI|OpenAI/i.test(name)) {
-      tags.push("GPT");
-    }
 
+// =======================
+// 删除重复标签
+// =======================
 
-    if (/优化|OPT/i.test(name)) {
-      tags.push("OPT");
-    }
 
+name =
+name.replace(
+/GPT GPT/g,
+"GPT"
+);
 
-    if (/WAP/i.test(name)) {
-      tags.push("WAP");
-    }
 
+name =
+name.replace(
+/WAP WAP/g,
+"WAP"
+);
 
-    if (/高速专线|专线|IEPL|IPLC/i.test(name)) {
-      tags.push("PREMIUM");
-    }
 
 
-    if (/直连|DIRECT/i.test(name)) {
-      tags.push("DIRECT");
-    }
+name =
+name.replace(
+/移动 联通/g,
+""
+);
 
 
-    if (/原生|ISP/i.test(name)) {
-      tags.push("ISP");
-    }
+name =
+name.replace(
+/联通 电信/g,
+""
+);
 
 
-    if (/V6|IPv6/i.test(name)) {
-      tags.push("V6");
-    }
 
 
+// =======================
+// 国家ISO
+// =======================
 
-    // 倍率
 
-    let rate =
-      name.match(
-        /(0\.\d+)倍|【(\d+)x】|(\d+)倍/
-      );
+const geo =
+ProxyUtils.getISO(name);
 
 
-    if(rate){
 
-      let r =
-        rate[1] ||
-        rate[2] ||
-        rate[3];
+const flag =
+ProxyUtils.getFlag(name);
 
 
-      tags.push(
-        r + "x"
-      );
 
-    }
 
+// =======================
+// 标签提取
+// =======================
 
 
-    // 运营商
+let tags=[];
 
-    if(/移动|CM/i.test(name)){
-      tags.push("CM");
-    }
 
 
-    if(/联通|CU/i.test(name)){
-      tags.push("CU");
-    }
+if(/GPT|AI/i.test(name))
+ tags.push("GPT");
 
 
-    if(/电信|CT/i.test(name)){
-      tags.push("CT");
-    }
 
+if(/WAP/i.test(name))
+ tags.push("WAP");
 
 
-    // ====================
-    // 防重复编号
-    // ====================
 
+if(/直连|DIRECT/i.test(name))
+ tags.push("DIRECT");
 
-    let key =
-      tags.join("-");
 
 
-    counter[key] =
-      (counter[key] || 0)+1;
+if(/原生|ISP/i.test(name))
+ tags.push("ISP");
 
 
-    let num =
-      String(counter[key])
-      .padStart(2,"0");
 
+if(/移动|CM/i.test(name))
+ tags.push("CM");
 
 
-    // ====================
-    // 最终格式
-    // ====================
+if(/联通|CU/i.test(name))
+ tags.push("CU");
 
 
-    if(tags.length){
+if(/电信|CT/i.test(name))
+ tags.push("CT");
 
-      proxy.name =
-        `${name} [${tags.join("-")}] ${num}`;
 
-    }
-    else{
 
-      proxy.name =
-        `${name} ${num}`;
+if(/0\.1|0\.1×/i.test(name))
+ tags.push("0.1x");
 
-    }
 
+if(/2×|2x/i.test(name))
+ tags.push("2x");
 
-    return proxy;
 
 
-  });
+
+
+// =======================
+// 去重
+// =======================
+
+
+tags =
+[...new Set(tags)];
+
+
+
+
+// =======================
+// 编号
+// =======================
+
+
+let key =
+`${geo}-${tags.join("-")}-${proxy.type}`;
+
+
+
+counter[key] =
+(counter[key]||0)+1;
+
+
+
+let num =
+String(counter[key])
+.padStart(2,"0");
+
+
+
+
+// =======================
+// 输出
+// =======================
+
+
+proxy.name =
+`${flag} ${geo} ${tags.length?"["+tags.join("-")+"]":""} ${num}`;
+
+
+
+return proxy;
+
+
+});
 
 
 }
