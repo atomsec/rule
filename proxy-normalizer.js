@@ -13,7 +13,7 @@ async function operator(proxies, targetPlatform, context) {
     /剩余流量|流量剩余|已用流量|总流量|流量重置|流量用量/i,
     /套餐(?:信息|到期|剩余|余量|有效期)|到期时间|有效期|长期有效|下次重置|重置时间/i,
     /过滤掉|机场地址|官网|订阅地址|https?:\/\/|www\./i,
-    /公告|通知|Telegram|TG群|频道|交流群|官方群|续费|购买套餐/i,
+    /公告|通知|Telegram|TG群|频道|交流群|官方群|续费|购买套餐|建议/i,
   ];
 
   function cleanName(value) {
