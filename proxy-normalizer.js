@@ -5,6 +5,9 @@ async function operator(proxies, targetPlatform, context) {
  Proxy Normalizer v2.1
 
  Multi Airport Node Standardizer
+ VL=VLESS, VM=VMESS, HY2=Hysteria2, TR=Trojan, SS=Shadowsocks,
+ CM=China Mobile, CU=China Unicom, CT=China Telecom,
+ PREMIUM=IEPL/IPLC/Dedicated/HIGH Dedicated, OPT=optimization, WAP=WAP OPT
 
 */
 
