@@ -1,0 +1,171 @@
+# Sub-Store 第三步：Mihomo 策略组模板（使用「文件 → Mihomo 配置 → Add Proxies」）
+# 节点格式预期：[机场] 🇭🇰 HK [PREMIUM-CM] [VL] 01
+# 重要：文件中的 proxies: [] 是占位。务必在 Sub-Store 文件处理中添加
+# 「从订阅添加节点 (Add Proxies)」，来源选择已经清洗完成的组合订阅。
+# 当前只有 MATCH 兜底规则；AI/流媒体等策略组的分流规则留到第四步。
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+profile:
+  store-selected: true
+
+proxies: []
+
+proxy-groups:
+  # 总入口：手选策略组，或直接选择具体节点
+  - name: '🚀 节点选择'
+    type: select
+    proxies:
+      - '⚡ 自动选择'
+      - '🔄 故障转移'
+      - '🇭🇰 香港节点'
+      - '🇯🇵 日本节点'
+      - '🇸🇬 新加坡节点'
+      - '🇹🇼 台湾节点'
+      - '🇰🇷 韩国节点'
+      - '🇺🇸 美国节点'
+      - '💎 专线节点'
+      - DIRECT
+    include-all-proxies: true
+
+  - name: '⚡ 自动选择'
+    type: url-test
+    include-all-proxies: true
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    tolerance: 50
+    empty-fallback: REJECT
+
+  - name: '🔄 故障转移'
+    type: fallback
+    include-all-proxies: true
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+    empty-fallback: REJECT
+
+  # 地区组：只匹配标准化名称开头的「[机场] 旗帜 两位国家代码」
+  # 因此机场名里含 HK / JP 等，不会误入对应地区组。
+  - name: '🇭🇰 香港节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+HK\s'
+    empty-fallback: REJECT
+
+  - name: '🇯🇵 日本节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+JP\s'
+    empty-fallback: REJECT
+
+  - name: '🇸🇬 新加坡节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+SG\s'
+    empty-fallback: REJECT
+
+  - name: '🇹🇼 台湾节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+TW\s'
+    empty-fallback: REJECT
+
+  - name: '🇰🇷 韩国节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+KR\s'
+    empty-fallback: REJECT
+
+  - name: '🇺🇸 美国节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+US\s'
+    empty-fallback: REJECT
+
+  # 标签组：只识别「地区代码」之后的线路标签中完整的关键词。
+  # 这些属于名称标签，不保证真实专线、运营商或 GPT 解锁能力。
+  - name: '💎 专线节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+[A-Z]{2}\s+\[(?:[^]]*-)?PREMIUM(?:-|\])'
+    empty-fallback: REJECT
+
+  - name: '📶 移动线路'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+[A-Z]{2}\s+\[(?:[^]]*-)?CM(?:-|\])'
+    empty-fallback: REJECT
+
+  - name: '🏷️ GPT标记节点'
+    type: select
+    include-all-proxies: true
+    filter: '^\[[^]]+\]\s+\S+\s+[A-Z]{2}\s+\[(?:[^]]*-)?GPT(?:-|\])'
+    empty-fallback: REJECT
+
+  # 应用策略组。后续第四步的分流规则可引用这些准确名称。
+  - name: '🤖 AI服务'
+    type: select
+    proxies:
+      - '🇺🇸 美国节点'
+      - '🇯🇵 日本节点'
+      - '🇸🇬 新加坡节点'
+      - '🏷️ GPT标记节点'
+      - '🚀 节点选择'
+
+  - name: '🎬 国际流媒体'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - '🇭🇰 香港节点'
+      - '🇯🇵 日本节点'
+      - '🇸🇬 新加坡节点'
+      - '🇺🇸 美国节点'
+
+  - name: '🎮 游戏服务'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+
+  - name: '🍎 苹果服务'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+
+  - name: '🪟 微软服务'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+
+  - name: '🏠 国内直连'
+    type: select
+    proxies:
+      - DIRECT
+      - '🚀 节点选择'
+
+  - name: '🌍 国外网站'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - DIRECT
+
+  - name: '🛑 广告拦截'
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+  - name: '🐟 漏网之鱼'
+    type: select
+    proxies:
+      - '🚀 节点选择'
+      - DIRECT
+
+# 第三步测试阶段：先确保配置可读取，所有流量走兜底。
+# 第四步加入 AI / 流媒体 / 国内直连等分流规则时，替换或扩充下面的规则。
+rules:
+  - 'MATCH,🐟 漏网之鱼'
